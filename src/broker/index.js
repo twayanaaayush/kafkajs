@@ -338,9 +338,11 @@ module.exports = class Broker {
    * @param {string} request.memberId The member id assigned by the group coordinator
    * @returns {Promise}
    */
-  async heartbeat({ groupId, groupGenerationId, memberId }) {
+  async heartbeat({ groupId, groupGenerationId, memberId, groupInstanceId }) {
     const heartbeat = this.lookupRequest(apiKeys.Heartbeat, requests.Heartbeat)
-    return await this[PRIVATE.SEND_REQUEST](heartbeat({ groupId, groupGenerationId, memberId }))
+    return await this[PRIVATE.SEND_REQUEST](
+      heartbeat({ groupId, groupGenerationId, memberId, groupInstanceId })
+    )
   }
 
   /**
@@ -377,6 +379,7 @@ module.exports = class Broker {
     memberId = '',
     protocolType = 'consumer',
     groupProtocols,
+    groupInstanceId = null,
   }) {
     const joinGroup = this.lookupRequest(apiKeys.JoinGroup, requests.JoinGroup)
     const makeRequest = (assignedMemberId = memberId) =>
@@ -388,6 +391,7 @@ module.exports = class Broker {
           memberId: assignedMemberId,
           protocolType,
           groupProtocols,
+          groupInstanceId,
         })
       )
 
@@ -409,9 +413,9 @@ module.exports = class Broker {
    * @param {string} request.memberId
    * @returns {Promise}
    */
-  async leaveGroup({ groupId, memberId }) {
+  async leaveGroup({ groupId, memberId, groupInstanceId }) {
     const leaveGroup = this.lookupRequest(apiKeys.LeaveGroup, requests.LeaveGroup)
-    return await this[PRIVATE.SEND_REQUEST](leaveGroup({ groupId, memberId }))
+    return await this[PRIVATE.SEND_REQUEST](leaveGroup({ groupId, memberId, groupInstanceId }))
   }
 
   /**
@@ -423,7 +427,7 @@ module.exports = class Broker {
    * @param {object} request.groupAssignment
    * @returns {Promise}
    */
-  async syncGroup({ groupId, generationId, memberId, groupAssignment }) {
+  async syncGroup({ groupId, generationId, memberId, groupAssignment, groupInstanceId }) {
     const syncGroup = this.lookupRequest(apiKeys.SyncGroup, requests.SyncGroup)
     return await this[PRIVATE.SEND_REQUEST](
       syncGroup({
@@ -431,6 +435,7 @@ module.exports = class Broker {
         generationId,
         memberId,
         groupAssignment,
+        groupInstanceId,
       })
     )
   }

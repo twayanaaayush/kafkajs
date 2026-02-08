@@ -82,6 +82,7 @@ module.exports = class ConsumerGroup {
     isolationLevel,
     rackId,
     metadataMaxAge,
+    groupInstanceId = null,
   }) {
     /** @type {import("../../types").Cluster} */
     this.cluster = cluster
@@ -105,6 +106,7 @@ module.exports = class ConsumerGroup {
     this.isolationLevel = isolationLevel
     this.rackId = rackId
     this.metadataMaxAge = metadataMaxAge
+    this.groupInstanceId = groupInstanceId
 
     this.seekOffset = new SeekOffsets()
     this.coordinator = null
@@ -130,7 +132,7 @@ module.exports = class ConsumerGroup {
     this.lastRequest = Date.now()
 
     this[PRIVATE.SHARED_HEARTBEAT] = sharedPromiseTo(async ({ interval }) => {
-      const { groupId, generationId, memberId } = this
+      const { groupId, generationId, memberId, groupInstanceId } = this
       const now = Date.now()
 
       if (memberId && now >= this.lastRequest + interval) {
@@ -138,6 +140,7 @@ module.exports = class ConsumerGroup {
           groupId,
           memberId,
           groupGenerationId: generationId,
+          groupInstanceId,
         }
 
         await this.coordinator.heartbeat(payload)
@@ -171,6 +174,7 @@ module.exports = class ConsumerGroup {
       sessionTimeout,
       rebalanceTimeout,
       memberId: this.memberId || '',
+      groupInstanceId: this.groupInstanceId,
       groupProtocols: this.assigners.map(assigner =>
         assigner.protocol({
           topics: this.topicsSubscribed,
@@ -188,7 +192,9 @@ module.exports = class ConsumerGroup {
   async leave() {
     const { groupId, memberId } = this
     if (memberId) {
-      await this.coordinator.leaveGroup({ groupId, memberId })
+      if (!this.groupInstanceId) {
+        await this.coordinator.leaveGroup({ groupId, memberId })
+      }
       this.memberId = null
     }
   }
@@ -234,6 +240,7 @@ module.exports = class ConsumerGroup {
       groupId,
       generationId,
       memberId,
+      groupInstanceId: this.groupInstanceId,
       groupAssignment: assignment,
     })
 
